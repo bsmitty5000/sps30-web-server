@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tiny Alarm</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1 id="clock">--:--:--</h1>
+
+      <div class="row controls">
+        <label>
+          <select id="hour"></select>
+        </label>
+
+        <label>
+          <select id="minute"></select>
+        </label>
+
+        <label>
+          <select id="ampm">
+            <option>AM</option>
+            <option>PM</option>
+          </select>
+        </label>
+        
+        <button id="setBtn">Set Alarm</button>
+        <label class="switch">
+          <input id="en" type="checkbox">
+          <span class="slider"></span>
+          Enabled
+        </label>
+        <button id="setBtn">Turn Off</button>
+      </div>
+
+      <div class="row form-row">
+        <label for="sunriseMin">Sunrise Duration (min)</label>
+        <input id="sunriseMin" type="number" inputmode="numeric" min="1" max="180" step="1" placeholder="45">
+      </div>
+
+      <p id="status">No alarm set.</p>
+  </main>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
