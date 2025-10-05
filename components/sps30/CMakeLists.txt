@@ -1,0 +1,9 @@
+idf_component_register(
+  SRCS 
+    src/sensirion_uart_hal.c
+  INCLUDE_DIRS 
+    include
+    sensirion-uart
+  REQUIRES
+    driver
+)
