@@ -1,0 +1,40 @@
+menu "SPS30 Simple Server Menu"
+
+    config EXAMPLE_SPIFFS_CHECK_ON_START
+        bool "Run SPIFFS_check on every start-up"
+        default y
+        help
+            If this config item is set, esp_spiffs_check() will be run on every start-up.
+            Slow on large flash sizes.
+            
+    config MDNS_HOST_NAME
+        string "mDNS Host Name"
+        default "sunrise"
+        help
+            Specify the domain name used in the mDNS service.
+            Note that webpage also take it as a part of URL where it will send GET/POST requests to.
+
+    config WEB_MOUNT_POINT
+        string "Website mount point in VFS"
+        default "/www"
+        help
+            Specify the mount point in VFS.
+
+    config UART_TX_GPIO
+        int "UART TX GPIO number"
+        range 0 48
+        default 17
+        help
+            GPIO number for UART TX pin.
+            Some GPIOs are used for other purposes (flash connections, etc.) 
+            and cannot be used for UART.
+
+    config UART_RX_GPIO
+        int "UART RX GPIO number"
+        range 0 48
+        default 16
+        help
+            GPIO number for UART RX pin.
+            Some GPIOs are used for other purposes (flash connections, etc.) 
+            and cannot be used for UART.
+endmenu
