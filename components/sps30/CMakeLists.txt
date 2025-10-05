@@ -1,5 +1,10 @@
 idf_component_register(
   SRCS 
+    sensirion-uart/sensirion_common.c
+    sensirion-uart/sensirion_shdlc.c
+    sensirion-uart/sensirion_streaming_shdlc.c
+    sensirion-uart/sensirion_streaming.c
+    sensirion-uart/sps30_uart.c
     src/sensirion_uart_hal.c
   INCLUDE_DIRS 
     include

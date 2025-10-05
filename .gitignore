@@ -39,3 +39,4 @@ Thumbs.db
 # --- Espressif tools cache ---
 .espressif/
 dist/
+managed_components/
