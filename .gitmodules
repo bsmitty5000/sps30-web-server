@@ -1,0 +1,3 @@
+[submodule "components/sps30/sensirion-uart"]
+	path = components/sps30/sensirion-uart
+	url = https://github.com/Sensirion/embedded-uart-sps30.git
