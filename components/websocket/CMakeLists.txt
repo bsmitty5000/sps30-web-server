@@ -1,6 +1,6 @@
 idf_component_register(
   SRCS 
-    "src/server.c"
+    "src/websocket.c"
   INCLUDE_DIRS 
     "include"
   REQUIRES 
@@ -9,5 +9,4 @@ idf_component_register(
     spiffs
     vfs
     json
-    alarm
 )

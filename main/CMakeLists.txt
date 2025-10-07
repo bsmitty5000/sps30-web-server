@@ -1,3 +1,5 @@
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
 idf_component_register(
     SRCS 
         "main.c"
@@ -7,6 +9,9 @@ idf_component_register(
         ""
     REQUIRES
         sps30
+        websocket
+        nvs_flash
+        spiffs
 )
 
 set(WEB_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../www")

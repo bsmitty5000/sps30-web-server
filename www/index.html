@@ -1,48 +1,77 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tiny Alarm</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPS30 Air Quality Monitor</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="wrap">
-    <h1 id="clock">--:--:--</h1>
+    <div class="container">
+        <header>
+            <h1>Air Quality Monitor</h1>
+            <div class="status" id="status">
+                <span class="status-dot"></span>
+                <span class="status-text">Connecting...</span>
+            </div>
+        </header>
 
-      <div class="row controls">
-        <label>
-          <select id="hour"></select>
-        </label>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">PM1.0</div>
+                <div class="metric-value" id="pm1">--</div>
+                <div class="metric-unit">µg/m³</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">PM2.5</div>
+                <div class="metric-value" id="pm25">--</div>
+                <div class="metric-unit">µg/m³</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">PM4.0</div>
+                <div class="metric-value" id="pm4">--</div>
+                <div class="metric-unit">µg/m³</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">PM10</div>
+                <div class="metric-value" id="pm10">--</div>
+                <div class="metric-unit">µg/m³</div>
+            </div>
+        </div>
 
-        <label>
-          <select id="minute"></select>
-        </label>
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>Particulate Matter Trends</h2>
+                <div class="chart-controls">
+                    <label>
+                        <input type="checkbox" id="show-pm1" checked> PM1.0
+                    </label>
+                    <label>
+                        <input type="checkbox" id="show-pm25" checked> PM2.5
+                    </label>
+                    <label>
+                        <input type="checkbox" id="show-pm4" checked> PM4.0
+                    </label>
+                    <label>
+                        <input type="checkbox" id="show-pm10" checked> PM10
+                    </label>
+                </div>
+            </div>
+            <canvas id="chart"></canvas>
+        </div>
 
-        <label>
-          <select id="ampm">
-            <option>AM</option>
-            <option>PM</option>
-          </select>
-        </label>
-        
-        <button id="setBtn">Set Alarm</button>
-        <label class="switch">
-          <input id="en" type="checkbox">
-          <span class="slider"></span>
-          Enabled
-        </label>
-        <button id="setBtn">Turn Off</button>
-      </div>
+        <div class="info-bar">
+            <div class="info-item">
+                <span class="info-label">Last Update:</span>
+                <span id="last-update">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Update Rate:</span>
+                <span id="update-rate">--</span>
+            </div>
+        </div>
+    </div>
 
-      <div class="row form-row">
-        <label for="sunriseMin">Sunrise Duration (min)</label>
-        <input id="sunriseMin" type="number" inputmode="numeric" min="1" max="180" step="1" placeholder="45">
-      </div>
-
-      <p id="status">No alarm set.</p>
-  </main>
-
-  <script src="app.js" defer></script>
+    <script src="app.js"></script>
 </body>
 </html>
