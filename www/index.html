@@ -3,75 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPS30 Air Quality Monitor</title>
+    <title>ESP32 WebSocket Client</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Air Quality Monitor</h1>
-            <div class="status" id="status">
-                <span class="status-dot"></span>
-                <span class="status-text">Connecting...</span>
+        <h1>ESP32 WebSocket Data</h1>
+        <div id="data-container" class="data-container">
+            <div class="data-item">
+                <span class="data-label">Random Number:</span>
+                <span id="random-number">--</span>
             </div>
-        </header>
-
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">PM1.0</div>
-                <div class="metric-value" id="pm1">--</div>
-                <div class="metric-unit">µg/m³</div>
+            <div class="data-item">
+                <span class="data-label">Uptime (ms):</span>
+                <span id="uptime">--</span>
             </div>
-            <div class="metric-card">
-                <div class="metric-label">PM2.5</div>
-                <div class="metric-value" id="pm25">--</div>
-                <div class="metric-unit">µg/m³</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">PM4.0</div>
-                <div class="metric-value" id="pm4">--</div>
-                <div class="metric-unit">µg/m³</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">PM10</div>
-                <div class="metric-value" id="pm10">--</div>
-                <div class="metric-unit">µg/m³</div>
+            <div class="data-item">
+                <span class="data-label">Status:</span>
+                <span id="status">--</span>
             </div>
         </div>
-
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2>Particulate Matter Trends</h2>
-                <div class="chart-controls">
-                    <label>
-                        <input type="checkbox" id="show-pm1" checked> PM1.0
-                    </label>
-                    <label>
-                        <input type="checkbox" id="show-pm25" checked> PM2.5
-                    </label>
-                    <label>
-                        <input type="checkbox" id="show-pm4" checked> PM4.0
-                    </label>
-                    <label>
-                        <input type="checkbox" id="show-pm10" checked> PM10
-                    </label>
-                </div>
-            </div>
-            <canvas id="chart"></canvas>
+        
+        <!-- Controls for the user to interact with the WebSocket connection -->
+        <div class="controls">
+            <button id="registerBtn" disabled>Register for Broadcasts</button>
+            <button id="disconnectBtn" disabled>Request Disconnect</button>
         </div>
-
-        <div class="info-bar">
-            <div class="info-item">
-                <span class="info-label">Last Update:</span>
-                <span id="last-update">--</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Update Rate:</span>
-                <span id="update-rate">--</span>
-            </div>
+        
+        <div id="connection-status" class="disconnected">
+            Connecting to WebSocket...
         </div>
     </div>
-
     <script src="app.js"></script>
 </body>
 </html>
