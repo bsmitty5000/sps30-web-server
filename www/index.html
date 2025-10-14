@@ -3,37 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 WebSocket Client</title>
+    <title>Air Quality Monitor - SPS30</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>ESP32 WebSocket Data</h1>
-        <div id="data-container" class="data-container">
-            <div class="data-item">
-                <span class="data-label">Random Number:</span>
-                <span id="random-number">--</span>
+        <header>
+            <h1>Air Quality Monitor</h1>
+            <div class="connection-status">
+                <span id="status-indicator" class="status-dot disconnected"></span>
+                <span id="status-text">Disconnected</span>
             </div>
-            <div class="data-item">
-                <span class="data-label">Uptime (ms):</span>
-                <span id="uptime">--</span>
-            </div>
-            <div class="data-item">
-                <span class="data-label">Status:</span>
-                <span id="status">--</span>
-            </div>
-        </div>
-        
-        <!-- Controls for the user to interact with the WebSocket connection -->
+        </header>
+
         <div class="controls">
-            <button id="registerBtn" disabled>Register for Broadcasts</button>
-            <button id="disconnectBtn" disabled>Request Disconnect</button>
+            <input type="text" id="server-url" placeholder="ws://localhost:8080" value="ws://localhost:8080">
+            <button id="connect-btn" onclick="connectToServer()">Connect</button>
+            <button id="disconnect-btn" onclick="disconnectFromServer()" disabled>Disconnect</button>
         </div>
-        
-        <div id="connection-status" class="disconnected">
-            Connecting to WebSocket...
+
+        <div class="content">
+            <div class="chart-container">
+                <h2>Mass Concentration (PM)</h2>
+                <canvas id="massChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h2>Number Concentration</h2>
+                <canvas id="numberChart"></canvas>
+            </div>
+
+            <div class="data-table-container">
+                <h2>Latest Readings</h2>
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                            <th>Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
     <script src="app.js"></script>
 </body>
 </html>

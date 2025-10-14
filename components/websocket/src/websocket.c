@@ -45,6 +45,14 @@ typedef struct websocket_context
     TaskHandle_t task;
 } websocket_context_t;
 
+typedef struct 
+{
+    httpd_handle_t server;
+    uint8_t *payload;
+    size_t len;
+    ws_client_t clients[MAX_WEBSOCKET_CLIENTS]; // Current client list at the time of broadcast
+} broadcast_arg_t;
+
 #define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)
 
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filepath)
@@ -169,14 +177,17 @@ static void send_response_to_client(httpd_req_t *req, const char *action, const 
  */
 static esp_err_t add_client(websocket_context_t* _context, int new_fd) 
 {
-    if (xSemaphoreTake(_context->lock, portMAX_DELAY) == pdTRUE) {
-        for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; i++) {
-            if (_context->clients[i].fd == 0) { // Find an empty slot
-                _context->clients[i].fd = new_fd;
-                ESP_LOGI(TAG, "Client connected, fd=%d", new_fd);
-                xSemaphoreGive(_context->lock);
-                return ESP_OK;
-            }
+    if (xSemaphoreTake(_context->lock, portMAX_DELAY) == pdTRUE) 
+    {
+        for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; i++) 
+        {
+            if (_context->clients[i].fd >= 0)
+                continue;
+
+            _context->clients[i].fd = new_fd;
+            ESP_LOGI(TAG, "Client connected, fd=%d", new_fd);
+            xSemaphoreGive(_context->lock);
+            return ESP_OK;
         }
         ESP_LOGW(TAG, "Client list full, connection rejected for fd=%d", new_fd);
         xSemaphoreGive(_context->lock);
@@ -192,16 +203,46 @@ static esp_err_t add_client(websocket_context_t* _context, int new_fd)
  */
 static void remove_client(websocket_context_t* _context, int fd_to_remove) 
 {
-    if (xSemaphoreTake(_context->lock, portMAX_DELAY) == pdTRUE) {
-        for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; i++) {
-            if (_context->clients[i].fd == fd_to_remove) {
-                _context->clients[i].fd = 0; // Mark slot as empty
+    if (xSemaphoreTake(_context->lock, portMAX_DELAY) == pdTRUE) 
+    {
+        for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; i++) 
+        {
+            if (_context->clients[i].fd == fd_to_remove) 
+            {
+                _context->clients[i].fd = -1;
                 ESP_LOGI(TAG, "Client disconnected, fd=%d", fd_to_remove);
                 break;
             }
         }
         xSemaphoreGive(_context->lock);
     }
+}
+
+static void broadcast_work_cb(void *arg)
+{
+    broadcast_arg_t *a = (broadcast_arg_t *)arg;
+    if (!a) return;
+
+    httpd_ws_frame_t tx = {
+        .final = true,
+        .fragmented = false,
+        .type = HTTPD_WS_TYPE_TEXT,
+        .payload = a->payload,
+        .len = a->len
+    };
+
+    for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; ++i) 
+    {
+        int fd = a->clients[i].fd;
+        if (fd < 0) continue;
+
+        ESP_LOGI(TAG, "client %d package sent.", fd);
+        httpd_ws_send_frame_async(a->server, fd, &tx);
+    }
+
+    // free payload & arg
+    free(a->payload);
+    free(a);
 }
 
 /**
@@ -212,66 +253,64 @@ static void remove_client(websocket_context_t* _context, int fd_to_remove)
  *
  * @param pvParameters context.
  */
-void broadcast_task(void *pvParameters) 
+void broadcast_task(void *pvParameters)
 {
     websocket_context_t *_context = (websocket_context_t*)pvParameters;
-    int sentCount = 0;
 
     for (;;) 
     {
-        // Create JSON payload
         cJSON *root = cJSON_CreateObject();
         cJSON_AddNumberToObject(root, "randomNumber", esp_random() % 100);
         cJSON_AddNumberToObject(root, "uptime", esp_timer_get_time() / 1000);
         cJSON_AddStringToObject(root, "status", "OK");
-        const char *json_string = cJSON_PrintUnformatted(root);
+        char *json_string = cJSON_PrintUnformatted(root);
+        cJSON_Delete(root);
 
-        if (json_string == NULL) 
-        {
+        if (!json_string) {
             ESP_LOGE(TAG, "Failed to print cJSON");
-            cJSON_Delete(root);
             vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
         }
-
-        // Prepare WebSocket frame
-        httpd_ws_frame_t ws_pkt;
-        memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-        ws_pkt.payload = (uint8_t*)json_string;
-        ws_pkt.len = strlen(json_string);
-        ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-
-        // Iterate over clients and send data
-        if (xSemaphoreTake(_context->lock, portMAX_DELAY) == pdTRUE) 
+        
+        ESP_LOGI(TAG, "broadcast string: %s.", json_string);
+        
+        // copy payload once to heap
+        size_t len = strlen(json_string);
+        broadcast_arg_t *arg = malloc(sizeof(*arg));
+        if (!arg) 
         {
-            for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; i++)
-            {
-                if (_context->clients[i].fd != 0) 
-                {
-                    sentCount++;
-                    // Use httpd_ws_send_frame_async for non-blocking sends
-                    httpd_ws_send_frame_async(_context->server, _context->clients[i].fd, &ws_pkt);
-                }
-            }
-            xSemaphoreGive(_context->lock);
+            ESP_LOGE(TAG, "no mem for broadcast arg");
+            return;
+        }
+        arg->payload = malloc(len);
+        if (!arg->payload) 
+        {
+            free(arg);
+            ESP_LOGE(TAG, "no mem for payload");
+            return;
+        }
+        
+        memcpy(arg->payload, json_string, len);
+        xSemaphoreTake(_context->lock, portMAX_DELAY);
+        for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; ++i) 
+        {
+            arg->clients[i].fd = _context->clients[i].fd;
+        }
+        arg->len = len;
+        arg->server = _context->server;
+        xSemaphoreGive(_context->lock);
 
-            if(sentCount == 0)
-            {
-                ESP_LOGI(TAG, "No clients yet!");
-            }
-            else
-            {
-                ESP_LOGI(TAG, "Sent %s to %d clients!", json_string, sentCount);
-            }
-            sentCount = 0;
+        esp_err_t r = httpd_queue_work(_context->server, broadcast_work_cb, arg);
+        if (r != ESP_OK) 
+        {
+            ESP_LOGW(TAG, "httpd_queue_work failed: 0x%x", r);
+            free(arg->payload);
+            free(arg);
         }
 
-        // Clean up
-        cJSON_Delete(root);
-        free((void*)json_string);
+        free(json_string);
 
-        // Wait for the next broadcast
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(5000)); // or your desired rate
     }
 }
 
@@ -387,6 +426,11 @@ esp_err_t websocket_server_start(const char *base_path)
     websocket_context_t *_context = calloc(1, sizeof(websocket_context_t));
     WEBSOCKET_CHECK(_context, "No memory for sunrise server context", err);
     strlcpy(_context->base_path, base_path, sizeof(_context->base_path));
+    
+    for (int i = 0; i < MAX_WEBSOCKET_CLIENTS; ++i) 
+    {
+        _context->clients[i].fd = -1;
+    }
     
     _context->lock = xSemaphoreCreateMutex();
     
