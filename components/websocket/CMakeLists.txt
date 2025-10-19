@@ -4,9 +4,10 @@ idf_component_register(
   INCLUDE_DIRS 
     "include"
   REQUIRES 
-    esp_http_server 
-    esp_timer 
+    esp_http_server
+    esp_timer
     spiffs
     vfs
     json
+    sps30
 )

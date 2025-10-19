@@ -13,6 +13,9 @@
 #include "esp_vfs.h"
 #include "cJSON.h"
 #include "websocket.h"
+#include "sensirion_uart_hal.h"
+#include "sensirion_common.h"
+#include "sps30_uart.h"
 
 static const char *TAG = "websocket";
 
@@ -218,6 +221,35 @@ static void remove_client(websocket_context_t* _context, int fd_to_remove)
     }
 }
 
+
+static int sps30_init() 
+{
+    int16_t error = NO_ERROR;
+
+    // input parameter unused for this application
+    error = sensirion_uart_hal_init(0);
+    if (error != NO_ERROR) 
+    {
+        printf("error executing sensirion_uart_hal_init(): %i\n", error);
+    }
+
+    error = sps30_stop_measurement();
+    if (error != NO_ERROR) 
+    {
+        printf("error executing sps30_stop_measurement(): %i\n", error);
+    }
+    
+    //float outputs
+    error = sps30_start_measurement((sps30_output_format)(259));
+    if (error != NO_ERROR) 
+    {
+        printf("error executing start_measurement(): %i\n", error);
+        return error;
+    }
+
+    return NO_ERROR;
+}
+
 static void broadcast_work_cb(void *arg)
 {
     broadcast_arg_t *a = (broadcast_arg_t *)arg;
@@ -256,17 +288,52 @@ static void broadcast_work_cb(void *arg)
 void broadcast_task(void *pvParameters)
 {
     websocket_context_t *_context = (websocket_context_t*)pvParameters;
+    int16_t error = NO_ERROR;
+    float mc_1p0 = 0;
+    float mc_2p5 = 0;
+    float mc_4p0 = 0;
+    float mc_10p0 = 0;
+    float nc_0p5 = 0;
+    float nc_1p0 = 0;
+    float nc_2p5 = 0;
+    float nc_4p0 = 0;
+    float nc_10p0 = 0;
+    float typical_particle_size = 0;
+    const char *OK = "OK";
+    const char *NOK = "NOK";
 
     for (;;) 
     {
         cJSON *root = cJSON_CreateObject();
-        cJSON_AddNumberToObject(root, "randomNumber", esp_random() % 100);
-        cJSON_AddNumberToObject(root, "uptime", esp_timer_get_time() / 1000);
-        cJSON_AddStringToObject(root, "status", "OK");
+        error = sps30_read_measurement_values_float(
+            &mc_1p0, &mc_2p5, &mc_4p0, &mc_10p0, &nc_0p5, &nc_1p0, &nc_2p5,
+            &nc_4p0, &nc_10p0, &typical_particle_size);
+        if (error != NO_ERROR) 
+        {
+            printf("error executing read_measurement_values_uint16(): %i\n",
+                   error);
+            cJSON_AddStringToObject(root, "status", NOK);
+        }
+        else
+        {
+            cJSON_AddStringToObject(root, "status", OK);
+        }
+        cJSON_AddNumberToObject(root, "mc_1p0", mc_1p0);
+        cJSON_AddNumberToObject(root, "mc_2p5", mc_2p5);
+        cJSON_AddNumberToObject(root, "mc_4p0", mc_4p0);
+        cJSON_AddNumberToObject(root, "mc_10p0", mc_10p0);
+        cJSON_AddNumberToObject(root, "nc_0p5", nc_0p5);
+        cJSON_AddNumberToObject(root, "nc_1p0", nc_1p0);
+        cJSON_AddNumberToObject(root, "nc_2p5", nc_2p5);
+        cJSON_AddNumberToObject(root, "nc_4p0", nc_4p0);
+        cJSON_AddNumberToObject(root, "nc_10p0", nc_10p0);
+        cJSON_AddNumberToObject(root, "typical_particle_size", typical_particle_size);
+
         char *json_string = cJSON_PrintUnformatted(root);
         cJSON_Delete(root);
 
-        if (!json_string) {
+        if (!json_string) 
+        {
             ESP_LOGE(TAG, "Failed to print cJSON");
             vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
@@ -310,7 +377,7 @@ void broadcast_task(void *pvParameters)
 
         free(json_string);
 
-        vTaskDelay(pdMS_TO_TICKS(5000)); // or your desired rate
+        vTaskDelay(pdMS_TO_TICKS(1000)); // or your desired rate
     }
 }
 
@@ -485,10 +552,16 @@ esp_err_t websocket_server_start(const char *base_path)
     };
     httpd_register_uri_handler(server, &common_get_uri);
 
+    int16_t error = sps30_init();
+    if (error != NO_ERROR) 
+    {
+        printf("error executing sps30_init(): %i\n", error);
+        return error;
+    }
+
     BaseType_t ok = xTaskCreatePinnedToCore(
         broadcast_task, "broadcast_task", 4096, _context, 5, &_context->task, tskNO_AFFINITY);
         
-
     if (ok != pdPASS) 
     {
         ESP_LOGE(TAG, "failed to create task");

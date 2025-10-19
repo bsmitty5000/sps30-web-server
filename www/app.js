@@ -129,13 +129,11 @@ function createDataset(label, key, color) {
 }
 
 function connectToServer() {
-    const url = document.getElementById('server-url').value;
-    
-    if (!url) {
-        alert('Please enter a server URL');
-        return;
-    }
+    // Build WebSocket URL based on current page location
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const url = `${protocol}//${window.location.host}/ws`;
 
+    console.log('Connecting to:', url);
     ws = new WebSocket(url);
 
     ws.onopen = () => {
@@ -143,12 +141,31 @@ function connectToServer() {
         updateConnectionStatus(true);
         document.getElementById('connect-btn').disabled = true;
         document.getElementById('disconnect-btn').disabled = false;
+
+        // Register client to receive broadcasts
+        ws.send(JSON.stringify({ action: 'registerClient' }));
     };
 
     ws.onmessage = (event) => {
         try {
-            const reading = JSON.parse(event.data);
-            addDataPoint(reading);
+            const message = JSON.parse(event.data);
+
+            // Handle registration response
+            if (message.response_for === 'registerClient') {
+                console.log('Registration response:', message.status, message.message);
+                return;
+            }
+
+            // Handle sensor data broadcast
+            if (message.status !== undefined) {
+                if (message.status === 'OK') {
+                    addDataPoint(message);
+                } else {
+                    console.warn('Sensor reading error:', message.status);
+                    // Still update with zero values to show connection is alive
+                    addDataPoint(message);
+                }
+            }
         } catch (e) {
             console.error('Error parsing message:', e);
         }

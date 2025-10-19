@@ -44,16 +44,16 @@ static const char *WRITE_TAG = "SPS30_HAL_WRITE";
 #define SPS30_UART_PORT   UART_NUM_2
 #define SPS30_BAUD_RATE   115200
 
-static void hexdump(const char* tag, const uint8_t *buf, size_t len) 
-{
-    char line[128];
-    for (size_t off = 0; off < len; off += 16) {
-        int n = 0;
-        size_t end = off + 16; if (end > len) end = len;
-        for (size_t i = off; i < end; ++i) n += snprintf(line + n, sizeof(line) - n, "%02X ", buf[i]);
-        ESP_LOGI(tag, "%d: %s", len, line);
-    }
-}
+// static void hexdump(const char* tag, const uint8_t *buf, size_t len) 
+// {
+//     char line[128];
+//     for (size_t off = 0; off < len; off += 16) {
+//         int n = 0;
+//         size_t end = off + 16; if (end > len) end = len;
+//         for (size_t i = off; i < end; ++i) n += snprintf(line + n, sizeof(line) - n, "%02X ", buf[i]);
+//         ESP_LOGI(tag, "%d: %s", len, line);
+//     }
+// }
 /*
  * INSTRUCTIONS
  * ============
@@ -81,7 +81,6 @@ int16_t sensirion_uart_hal_select_port(uint8_t port) {
  */
 int16_t sensirion_uart_hal_init(UartDescr port) 
 {
-    printf("in sensirion_uart_hal_init\n");
     const uart_config_t uart_config = 
     {
         .baud_rate = SPS30_BAUD_RATE,
