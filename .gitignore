@@ -40,3 +40,6 @@ Thumbs.db
 .espressif/
 dist/
 managed_components/
+
+# --- Git worktrees ---
+.worktrees/
