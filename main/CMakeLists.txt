@@ -3,7 +3,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 idf_component_register(
     SRCS 
         "main.c"
-        "sensor_events.h"
+        "sensor_events.c"
     PRIV_REQUIRES 
         spi_flash
     INCLUDE_DIRS 

@@ -25,6 +25,7 @@
 #include "protocol_examples_common.h"
 #include "lwip/apps/netbiosns.h"
 #include "websocket.h"
+#include "sensor_events.h"
 
 int sps30(void);
 
@@ -105,6 +106,10 @@ void app_main(void)
 
     ESP_ERROR_CHECK(example_connect());
     ESP_ERROR_CHECK(init_fs());
+
+    ESP_ERROR_CHECK(sensor_events_init());
+    ESP_LOGI(TAG, "Event system initialized");
+
     time_init();
     ESP_ERROR_CHECK(websocket_server_start(CONFIG_WEB_MOUNT_POINT));
 }
@@ -157,7 +162,8 @@ int sps30(void)
         error = sps30_read_measurement_values_uint16(
             &mc_1p0, &mc_2p5, &mc_4p0, &mc_10p0, &nc_0p5, &nc_1p0, &nc_2p5,
             &nc_4p0, &nc_10p0, &typical_particle_size);
-        if (error != NO_ERROR) {
+        if (error != NO_ERROR) 
+        {
             printf("error executing read_measurement_values_uint16(): %i\n",
                    error);
             continue;

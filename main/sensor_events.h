@@ -59,3 +59,15 @@ typedef struct
 
 // Initialize the event loop
 esp_err_t sensor_events_init(void);
+
+/**
+ * Start the sensor reading task
+ * Initializes SPS30 and begins publishing sensor events at 1Hz
+ */
+esp_err_t sensor_task_start(void);
+
+/**
+ * Get the last sensor reading (for REST API queries)
+ * Thread-safe access to most recent data
+ */
+esp_err_t sensor_task_get_latest(sensor_data_t *out_data);
